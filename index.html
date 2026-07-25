@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AR Rogaining Navigator</title>
+  <meta name="description" content="ロゲイニング向け AR リアルタイム道案内 & コンパスナビゲーション アプリ">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <!-- Three.js Global Script -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ヘッダーナビゲーション -->
+    <header class="app-header">
+      <div class="brand-title">
+        <h1>🧭 AR Rogaining</h1>
+        <span class="badge-live">MVP Active</span>
+      </div>
+
+      <nav class="nav-tabs">
+        <button id="tab-ar" class="tab-btn active">
+          <span>📷 ARコンパス</span>
+        </button>
+        <button id="tab-map" class="tab-btn">
+          <span>🗺️ マップ選択</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- ARコンパスビュー -->
+    <section id="ar-view" class="view-section active">
+      <!-- カメラビデオバックグラウンド -->
+      <video id="camera-video" playsinline autoplay muted></video>
+
+      <!-- Three.js 3D描画用キャンバスコンテナ -->
+      <div id="three-canvas-container"></div>
+
+      <!-- AR HUD オーバーレイ -->
+      <div class="ar-hud-overlay">
+        <div class="target-info-card">
+          <div class="target-details">
+            <span class="target-label">現在の目的地</span>
+            <h2 id="hud-target-name" class="target-name">CP01: スターティングポイント</h2>
+          </div>
+          <div class="target-distance-badge">
+            <span id="hud-distance-val" class="distance-value">--- m</span>
+            <span class="distance-label">直線距離</span>
+          </div>
+        </div>
+
+        <div class="ar-compass-status">
+          <div class="sensor-chip">
+            <span id="chip-gps-dot" class="chip-dot"></span>
+            <span id="chip-gps-text">GPS: 待機中</span>
+          </div>
+          <div class="sensor-chip">
+            <span id="chip-compass-dot" class="chip-dot"></span>
+            <span id="chip-compass-text">コンパス: 待機中</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- マップビュー -->
+    <section id="map-view" class="view-section">
+      <div id="leaflet-map"></div>
+
+      <div class="map-floating-controls">
+        <button id="btn-recenter" class="map-btn" title="現在地に移動">
+          🎯
+        </button>
+      </div>
+
+      <!-- マップ上部の案内バナー -->
+      <div class="map-banner-overlay">
+        <span>チェックポイントをタップして目的地を選択してください</span>
+      </div>
+    </section>
+
+    <!-- カメラ・センサー許可開始オーバーレイ -->
+    <div id="permission-overlay" class="permission-overlay">
+      <div class="permission-card">
+        <div class="icon-ar-start">🧭</div>
+        <h2>ARコンパスを起動</h2>
+        <p>スマートフォンを目的地に向けたナビゲーションを開始します。カメラおよび位置情報・方位センサーの利用を許可してください。</p>
+        <button id="btn-start-app" class="btn-start-ar">ARナビゲーションを開始</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- アプリメインエントリーポイント -->
+  <script src="./src/bundle.js"></script>
+</body>
+</html>
