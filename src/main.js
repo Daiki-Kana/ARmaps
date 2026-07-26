@@ -12,7 +12,6 @@ import { sampleCheckpoints } from './data/checkpoints.js';
 import { SensorManager } from './modules/sensors.js';
 import { ARCompassViewer } from './modules/arCompass.js';
 import { MapView } from './modules/mapView.js';
-import { DebugPanel } from './modules/debugPanel.js';
 import { calculateBearing, calculateDistance, formatDistance } from './modules/geoUtils.js';
 
 class AppController {
@@ -23,7 +22,6 @@ class AppController {
     this.sensors = new SensorManager();
     this.arViewer = null;
     this.mapView = null;
-    this.debugPanel = null;
 
     this.activeTab = 'ar'; // 'ar' | 'map'
 
@@ -48,11 +46,9 @@ class AppController {
     this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id);
     this.mapView.setTargetLocation(this.currentTarget.lat, this.currentTarget.lng, this.currentTarget.name);
 
-    // 3. デバッグパネルの初期化 (PC用テストシミュレーター)
-    this.debugPanel = new DebugPanel(this.sensors, this.currentTarget);
-
     // 初期HUD表示更新
     this.updateHUDTargetInfo();
+    this.setDestination(this.currentTarget);
   }
 
   bindEvents() {
@@ -112,6 +108,146 @@ class AppController {
       const text = document.getElementById('chip-gps-text');
       if (text) text.textContent = 'GPS: エラー';
     });
+
+    this.initQRScanner();
+  }
+
+  initQRScanner() {
+    const btnOpenQr = document.getElementById('btn-open-qr');
+    const btnCloseQr = document.getElementById('btn-close-qr');
+    const qrModal = document.getElementById('qr-modal');
+    const qrResult = document.getElementById('qr-scan-result');
+    const fileInput = document.getElementById('qr-file-input');
+
+    const urlConfirmModal = document.getElementById('url-confirm-modal');
+    const urlConfirmText = document.getElementById('url-confirm-text');
+    const btnOpenUrl = document.getElementById('btn-open-url');
+    const btnCancelUrl = document.getElementById('btn-cancel-url');
+
+    let html5QrCode = null;
+
+    const handleScannedCode = (decodedText) => {
+      console.log('QR Code Scanned:', decodedText);
+      this.stopQrScanner(html5QrCode, qrModal);
+
+      let targetUrl = decodedText.trim();
+      if (!/^https?:\/\//i.test(targetUrl)) {
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(targetUrl)) {
+          targetUrl = 'https://' + targetUrl;
+        }
+      }
+
+      const textUpper = decodedText.toUpperCase();
+      let matchedCP = this.checkpoints.find(
+        (cp) =>
+          cp.id.toUpperCase() === textUpper ||
+          cp.code.toUpperCase() === textUpper ||
+          cp.name.toUpperCase().includes(textUpper) ||
+          textUpper.includes(cp.code.toUpperCase())
+      );
+
+      if (!matchedCP) {
+        const numMatch = textUpper.match(/\d+/);
+        if (numMatch) {
+          const cpNum = numMatch[0].padStart(2, '0');
+          matchedCP = this.checkpoints.find(
+            (cp) => cp.id.endsWith(cpNum) || cp.code.endsWith(cpNum)
+          );
+        }
+      }
+
+      if (matchedCP) {
+        this.setDestination(matchedCP);
+      }
+
+      if (urlConfirmModal) {
+        if (urlConfirmText) urlConfirmText.textContent = targetUrl;
+        if (btnOpenUrl) {
+          btnOpenUrl.href = /^https?:\/\//i.test(targetUrl)
+            ? targetUrl
+            : `https://www.google.com/search?q=${encodeURIComponent(targetUrl)}`;
+        }
+        urlConfirmModal.classList.add('active');
+      }
+    };
+
+    if (btnCancelUrl) {
+      btnCancelUrl.addEventListener('click', () => {
+        if (urlConfirmModal) urlConfirmModal.classList.remove('active');
+      });
+    }
+
+    if (btnOpenUrl) {
+      btnOpenUrl.addEventListener('click', () => {
+        if (urlConfirmModal) urlConfirmModal.classList.remove('active');
+      });
+    }
+
+    if (btnOpenQr) {
+      btnOpenQr.addEventListener('click', () => {
+        qrModal.classList.add('active');
+        if (qrResult) qrResult.style.display = 'none';
+
+        if (typeof Html5Qrcode !== 'undefined') {
+          try {
+            if (!html5QrCode) {
+              html5QrCode = new Html5Qrcode('qr-reader');
+            }
+            html5QrCode
+              .start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: { width: 200, height: 200 } },
+                handleScannedCode,
+                () => {}
+              )
+              .catch((err) => {
+                console.warn('Camera QR Scanner Start Error:', err);
+              });
+          } catch (e) {
+            console.warn('Html5Qrcode Init Error:', e);
+          }
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length === 0) return;
+        const imageFile = e.target.files[0];
+        if (typeof Html5Qrcode !== 'undefined') {
+          const scanner = html5QrCode || new Html5Qrcode('qr-reader');
+          scanner
+            .scanFile(imageFile, true)
+            .then(handleScannedCode)
+            .catch((err) => {
+              if (qrResult) {
+                qrResult.textContent = '画像からQRコードを検出できませんでした。';
+                qrResult.style.display = 'block';
+              }
+            });
+        }
+      });
+    }
+
+    if (btnCloseQr) {
+      btnCloseQr.addEventListener('click', () => {
+        this.stopQrScanner(html5QrCode, qrModal);
+      });
+    }
+  }
+
+  stopQrScanner(scannerInstance, modalEl) {
+    if (modalEl) modalEl.classList.remove('active');
+    if (scannerInstance) {
+      scannerInstance
+        .stop()
+        .catch(() => {})
+        .then(() => {
+          try {
+            scannerInstance.clear();
+          } catch (e) {}
+        });
+    }
   }
 
   /**
@@ -193,7 +329,9 @@ class AppController {
    */
   updateARCompassAngle() {
     const relativeAngle = this.latestBearing - this.latestHeading;
-    this.arViewer.setRelativeAngle(relativeAngle);
+    if (this.arViewer) {
+      this.arViewer.setRelativeAngle(relativeAngle);
+    }
   }
 
   /**

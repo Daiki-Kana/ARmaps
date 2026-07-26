@@ -3,55 +3,56 @@
  */
 
 (function () {
-  'use strict';
+  "use strict";
 
   // --- 1. Checkpoints Data ---
   const sampleCheckpoints = [
     {
-      id: 'cp-01',
-      name: 'CP01: スターティングポイント',
-      code: 'START-01',
+      id: "cp-01",
+      name: "CP01: スターティングポイント",
+      code: "START-01",
       lat: 35.681236,
       lng: 139.767125,
       points: 10,
-      description: '大会のスタート・ゴール地点。準備を整えて出発しましょう。'
+      description: "大会のスタート・ゴール地点。準備を整えて出発しましょう。",
     },
     {
-      id: 'cp-02',
-      name: 'CP02: 和田倉噴水公園',
-      code: 'PARK-02',
-      lat: 35.684120,
-      lng: 139.761750,
+      id: "cp-02",
+      name: "CP02: 和田倉噴水公園",
+      code: "PARK-02",
+      lat: 35.68412,
+      lng: 139.76175,
       points: 25,
-      description: '美しい大噴水がある公園。歴史的な雰囲気を感じられるスポット。'
+      description:
+        "美しい大噴水がある公園。歴史的な雰囲気を感じられるスポット。",
     },
     {
-      id: 'cp-03',
-      name: 'CP03: 皇居外苑 桜田門',
-      code: 'GATE-03',
-      lat: 35.678100,
-      lng: 139.752400,
+      id: "cp-03",
+      name: "CP03: 皇居外苑 桜田門",
+      code: "GATE-03",
+      lat: 35.6781,
+      lng: 139.7524,
       points: 40,
-      description: '重要文化財に指定されている歴史的な城門。'
+      description: "重要文化財に指定されている歴史的な城門。",
     },
     {
-      id: 'cp-04',
-      name: 'CP04: 東京タワー前広場',
-      code: 'TOWER-04',
-      lat: 35.658580,
-      lng: 139.745430,
+      id: "cp-04",
+      name: "CP04: 東京タワー前広場",
+      code: "TOWER-04",
+      lat: 35.65858,
+      lng: 139.74543,
       points: 50,
-      description: '高得点エリア！シンボルタワーの足元にある絶景スポット。'
+      description: "高得点エリア！シンボルタワーの足元にある絶景スポット。",
     },
     {
-      id: 'cp-05',
-      name: 'CP05: 日比谷公園 心字池',
-      code: 'POND-05',
-      lat: 35.673200,
-      lng: 139.756800,
+      id: "cp-05",
+      name: "CP05: 日比谷公園 心字池",
+      code: "POND-05",
+      lat: 35.6732,
+      lng: 139.7568,
       points: 30,
-      description: '静かな池と緑に囲まれた憩いの場。'
-    }
+      description: "静かな池と緑に囲まれた憩いの場。",
+    },
   ];
 
   // --- 2. Geo Utils ---
@@ -73,7 +74,10 @@
 
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(rLat1) * Math.cos(rLat2);
+      Math.sin(dLon / 2) *
+        Math.sin(dLon / 2) *
+        Math.cos(rLat1) *
+        Math.cos(rLat2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return EARTH_RADIUS * c;
@@ -97,7 +101,7 @@
   }
 
   function formatDistance(meters) {
-    if (meters == null || isNaN(meters)) return '測位中...';
+    if (meters == null || isNaN(meters)) return "測位中...";
     if (meters < 1000) {
       return `${Math.round(meters)} m`;
     }
@@ -106,7 +110,7 @@
 
   function lerpAngle(current, target, alpha = 0.25) {
     let diff = target - current;
-    diff = ((diff % 360) + 540) % 360 - 180;
+    diff = (((diff % 360) + 540) % 360) - 180;
     let result = current + diff * alpha;
     return ((result % 360) + 360) % 360;
   }
@@ -137,25 +141,50 @@
       this._handleOrientation = this._handleOrientation.bind(this);
     }
 
+    start() {
+      this.requestPermissions();
+    }
+
     requestPermissions() {
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
         DeviceOrientationEvent.requestPermission()
           .then((permissionState) => {
-            if (permissionState === 'granted') {
-              window.addEventListener('deviceorientation', this._handleOrientation, true);
+            if (permissionState === "granted") {
+              window.addEventListener(
+                "deviceorientation",
+                this._handleOrientation,
+                true,
+              );
             } else {
-              this._triggerError('iOSの設定でモーションアクセスの許可が必要です。');
+              this._triggerError(
+                "iOSの設定でモーションアクセスの許可が必要です。",
+              );
             }
           })
           .catch((err) => {
-            console.warn('iOS DeviceOrientation error:', err);
-            window.addEventListener('deviceorientation', this._handleOrientation, true);
+            console.warn("iOS DeviceOrientation error:", err);
+            window.addEventListener(
+              "deviceorientation",
+              this._handleOrientation,
+              true,
+            );
           });
       } else {
-        if ('ondeviceorientationabsolute' in window) {
-          window.addEventListener('deviceorientationabsolute', this._handleOrientation, true);
+        if ("ondeviceorientationabsolute" in window) {
+          window.addEventListener(
+            "deviceorientationabsolute",
+            this._handleOrientation,
+            true,
+          );
         }
-        window.addEventListener('deviceorientation', this._handleOrientation, true);
+        window.addEventListener(
+          "deviceorientation",
+          this._handleOrientation,
+          true,
+        );
       }
 
       this.startContinuousGPS();
@@ -165,8 +194,17 @@
      * 移動に合わせて常にリアルタイムでGPS現在地を連続追跡する
      */
     startContinuousGPS() {
-      if (!('geolocation' in navigator)) {
-        this._triggerError('Geolocation非対応のブラウザです。');
+      if (
+        !window.isSecureContext &&
+        location.hostname !== "localhost" &&
+        location.hostname !== "127.0.0.1"
+      ) {
+        this._triggerError("GPS: HTTPS接続が必要です (http:// -> https://)");
+        return;
+      }
+
+      if (!("geolocation" in navigator)) {
+        this._triggerError("Geolocation非対応のブラウザです。");
         return;
       }
 
@@ -175,31 +213,43 @@
         this.currentPosition = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy
+          accuracy: pos.coords.accuracy,
         };
         this.isGpsAvailable = true;
         // 登録されたコールバック(現在地更新・Bearing再計算)を即時実行
-        this.onPositionChangeCallbacks.forEach((cb) => cb(this.currentPosition));
+        this.onPositionChangeCallbacks.forEach((cb) =>
+          cb(this.currentPosition),
+        );
       };
+
+      // 初期現在地を迅速に取得
+      navigator.geolocation.getCurrentPosition(
+        successHandler,
+        (err) => console.warn("Initial getCurrentPosition info:", err.message),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 }
+      );
 
       // 高精度かつリアルタイム更新 (maximumAge: 0 で古い位置情報を破棄)
       // 高精度GPS連続追跡 (歩行移動に即座に追従)
       this.positionWatchId = navigator.geolocation.watchPosition(
         successHandler,
         (err) => {
-          console.warn('GPS Watch High Accuracy failed, retrying standard mode:', err.message);
+          console.warn(
+            "GPS Watch High Accuracy failed, retrying standard mode:",
+            err.message,
+          );
           // フォールバック: 標準精度で再試行
           navigator.geolocation.getCurrentPosition(
             successHandler,
-            (err2) => this._triggerError('GPSの位置情報を取得できません'),
-            { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 }
+            (err2) => this._triggerError("GPSの位置情報を取得できません"),
+            { enableHighAccuracy: false, maximumAge: 0, timeout: 10000 },
           );
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 0,        // キャッシュを使わず常に最新GPS位置を取得
-          timeout: 10000
-        }
+          maximumAge: 0, // キャッシュを使わず常に最新GPS位置を取得
+          timeout: 10000,
+        },
       );
     }
 
@@ -208,7 +258,10 @@
 
       let heading = null;
 
-      if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+      if (
+        event.webkitCompassHeading !== undefined &&
+        event.webkitCompassHeading !== null
+      ) {
         heading = event.webkitCompassHeading;
       } else if (event.alpha !== undefined && event.alpha !== null) {
         heading = (360 - event.alpha) % 360;
@@ -230,7 +283,8 @@
       let diff = newHeading - this._lastFilteredHeading;
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
-      this._lastFilteredHeading = (this._lastFilteredHeading + diff * this._lpfAlpha + 360) % 360;
+      this._lastFilteredHeading =
+        (this._lastFilteredHeading + diff * this._lpfAlpha + 360) % 360;
       return this._lastFilteredHeading;
     }
 
@@ -248,16 +302,22 @@
       this.onHeadingChangeCallbacks.forEach((cb) => cb(this.compassHeading));
     }
 
-    onPositionChange(cb) { this.onPositionChangeCallbacks.push(cb); }
-    onHeadingChange(cb) { this.onHeadingChangeCallbacks.push(cb); }
-    onError(cb) { this.onErrorCallbacks.push(cb); }
+    onPositionChange(cb) {
+      this.onPositionChangeCallbacks.push(cb);
+    }
+    onHeadingChange(cb) {
+      this.onHeadingChangeCallbacks.push(cb);
+    }
+    onError(cb) {
+      this.onErrorCallbacks.push(cb);
+    }
 
     _triggerError(msg) {
       this.onErrorCallbacks.forEach((cb) => cb(msg));
     }
   }
 
-  // --- 4. AR Compass Viewer (Three.js - Clean Overlay / No Grid) ---
+  // --- 4. AR Compass Viewer (Three.js - Red Arrow Overlay) ---
   class ARCompassViewer {
     constructor(containerElement, videoElement) {
       this.container = containerElement;
@@ -268,8 +328,6 @@
       this.renderer = null;
 
       this.arrowGroup = null;
-      this.compassRingGroup = null;
-      this.pulseMesh = null;
 
       this.targetAngle = 0;
       this.currentAngle = 0;
@@ -281,7 +339,7 @@
     }
 
     initThree() {
-      if (typeof THREE === 'undefined') return;
+      if (typeof THREE === "undefined") return;
 
       const width = this.container.clientWidth || window.innerWidth;
       const height = this.container.clientHeight || window.innerHeight;
@@ -289,8 +347,8 @@
       this.scene = new THREE.Scene();
 
       this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-      this.camera.position.set(0, 3.5, 4.0);
-      this.camera.lookAt(0, 0, 0);
+      this.camera.position.set(0, 3.2, 4.0);
+      this.camera.lookAt(0, 0.6, 0);
 
       this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       this.renderer.setSize(width, height);
@@ -298,106 +356,95 @@
 
       this.container.appendChild(this.renderer.domElement);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
       this.scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0x38bdf8, 2.0);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
       dirLight.position.set(5, 10, 7);
       this.scene.add(dirLight);
 
-      const pointLight = new THREE.PointLight(0x34d399, 2.5, 10);
-      pointLight.position.set(0, 1, 0);
-      this.scene.add(pointLight);
-
-      // ※ 黒いグリッド線 (GridHelper) は完全に削除しました
-
       this.create3DCompass();
 
-      window.addEventListener('resize', () => this.onWindowResize());
+      window.addEventListener("resize", () => this.onWindowResize());
       this.animate();
     }
 
     create3DCompass() {
       this.arrowGroup = new THREE.Group();
+      this.arrowGroup.position.set(0, -0.6, 0.5);
 
-      // Cone Head (-Z 方向 = 前方)
-      const coneGeo = new THREE.ConeGeometry(0.55, 1.3, 32);
-      coneGeo.rotateX(-Math.PI / 2);
-      const coneMat = new THREE.MeshStandardMaterial({
-        color: 0x06b6d4,
-        emissive: 0x0891b2,
-        emissiveIntensity: 0.6,
-        roughness: 0.2,
-        metalness: 0.8
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 1.4);
+      shape.lineTo(0.55, 0.45);
+      shape.lineTo(0.22, 0.45);
+      shape.lineTo(0.22, -0.8);
+      shape.lineTo(-0.22, -0.8);
+      shape.lineTo(-0.22, 0.45);
+      shape.lineTo(-0.55, 0.45);
+      shape.closePath();
+
+      const extrudeSettings = {
+        depth: 0.2,
+        bevelEnabled: true,
+        bevelSegments: 3,
+        steps: 1,
+        bevelSize: 0.03,
+        bevelThickness: 0.03,
+      };
+
+      const arrowGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      arrowGeo.center();
+      arrowGeo.rotateX(-Math.PI / 2);
+
+      const arrowMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0x7f1d1d,
+        emissiveIntensity: 0.35,
+        roughness: 0.25,
+        metalness: 0.4,
       });
-      const coneMesh = new THREE.Mesh(coneGeo, coneMat);
-      coneMesh.position.set(0, 0.2, -1.1);
-      this.arrowGroup.add(coneMesh);
 
-      // Cylinder Shaft
-      const cylGeo = new THREE.CylinderGeometry(0.18, 0.22, 1.4, 32);
-      cylGeo.rotateX(Math.PI / 2);
-      const cylMat = new THREE.MeshStandardMaterial({
-        color: 0x38bdf8,
-        emissive: 0x0284c7,
-        emissiveIntensity: 0.4,
-        roughness: 0.3,
-        metalness: 0.7
-      });
-      const cylMesh = new THREE.Mesh(cylGeo, cylMat);
-      cylMesh.position.set(0, 0.2, -0.2);
-      this.arrowGroup.add(cylMesh);
+      const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
+      this.arrowGroup.add(arrowMesh);
 
-      // Center Sphere Glow
-      const sphereGeo = new THREE.SphereGeometry(0.35, 32, 32);
-      const sphereMat = new THREE.MeshStandardMaterial({
-        color: 0x34d399,
-        emissive: 0x10b981,
-        emissiveIntensity: 0.9,
-        roughness: 0.1
-      });
-      const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
-      sphereMesh.position.set(0, 0.25, 0.4);
-      this.arrowGroup.add(sphereMesh);
-
-      // Compass Ring
-      const ringGeo = new THREE.TorusGeometry(1.8, 0.04, 16, 64);
-      ringGeo.rotateX(Math.PI / 2);
+      const ringGeo = new THREE.RingGeometry(1.3, 1.36, 64);
+      ringGeo.rotateX(-Math.PI / 2);
       const ringMat = new THREE.MeshBasicMaterial({
-        color: 0x38bdf8,
-        transparent: true,
-        opacity: 0.5
-      });
-      this.compassRingGroup = new THREE.Mesh(ringGeo, ringMat);
-      this.scene.add(this.compassRingGroup);
-
-      // Ground Pulse Wave
-      const pulseGeo = new THREE.RingGeometry(0.1, 2.0, 32);
-      pulseGeo.rotateX(-Math.PI / 2);
-      const pulseMat = new THREE.MeshBasicMaterial({
-        color: 0x06b6d4,
+        color: 0xef4444,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.3
+        opacity: 0.85,
       });
-      this.pulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
-      this.pulseMesh.position.set(0, -0.05, 0);
-      this.scene.add(this.pulseMesh);
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.set(0, -0.1, 0);
+      this.arrowGroup.add(ringMesh);
 
       this.scene.add(this.arrowGroup);
     }
 
     async startCamera() {
       if (!this.video) return false;
+
+      this.video.setAttribute("playsinline", "true");
+      this.video.setAttribute("webkit-playsinline", "true");
+      this.video.muted = true;
+
       const tryStream = async (constraints) => {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         this.video.srcObject = stream;
-        await this.video.play();
+        try {
+          await this.video.play();
+        } catch (err) {
+          console.warn("Camera video play error:", err);
+        }
         return true;
       };
 
       try {
-        await tryStream({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        await tryStream({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
         this.isCameraActive = true;
         return true;
       } catch (e1) {
@@ -407,10 +454,19 @@
           return true;
         } catch (e2) {
           this.isCameraActive = false;
-          document.getElementById('ar-view').style.background = 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)';
+          document.getElementById("ar-view").style.background = "#121214";
           return false;
         }
       }
+    }
+
+    stopCamera() {
+      if (this.video && this.video.srcObject) {
+        const tracks = this.video.srcObject.getTracks();
+        tracks.forEach((track) => track.stop());
+        this.video.srcObject = null;
+      }
+      this.isCameraActive = false;
     }
 
     setRelativeAngle(relativeAngleDeg) {
@@ -439,15 +495,8 @@
         const rad = (this.currentAngle * Math.PI) / 180;
         this.arrowGroup.rotation.y = rad;
 
-        const time = Date.now() * 0.003;
-        this.arrowGroup.position.y = Math.sin(time) * 0.08;
-      }
-
-      if (this.pulseMesh) {
-        const pTime = (Date.now() * 0.0015) % 1;
-        const scale = 0.5 + pTime * 1.2;
-        this.pulseMesh.scale.set(scale, scale, 1);
-        this.pulseMesh.material.opacity = Math.max(0, 0.5 * (1 - pTime));
+        const time = Date.now() * 0.002;
+        this.arrowGroup.position.y = -0.6 + Math.sin(time) * 0.04;
       }
 
       this.renderer.render(this.scene, this.camera);
@@ -461,6 +510,39 @@
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(width, height);
     }
+
+    destroy() {
+      if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
+      this.stopCamera();
+      if (this.renderer && this.renderer.domElement) {
+        this.container.removeChild(this.renderer.domElement);
+      }
+    }
+  }
+
+  function createCardinalTextSprite(text, isNorth) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+
+    ctx.clearRect(0, 0, 128, 128);
+    ctx.font = "bold 72px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = isNorth ? "#ffffff" : "#ef4444";
+    ctx.fillText(text, 64, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+    });
+
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.scale.set(0.55, 0.55, 1);
+    return sprite;
   }
 
   // --- 5. Map View (Leaflet) ---
@@ -476,17 +558,20 @@
     }
 
     init(defaultLat = 35.681236, defaultLng = 139.767125) {
-      if (this.isInitialized || typeof L === 'undefined') return;
+      if (this.isInitialized || typeof L === "undefined") return;
 
       const mapElement = document.getElementById(this.containerId);
       if (!mapElement) return;
 
-      this.map = L.map(this.containerId, { zoomControl: false }).setView([defaultLat, defaultLng], 15);
-      L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+      this.map = L.map(this.containerId, { zoomControl: false }).setView(
+        [defaultLat, defaultLng],
+        15,
+      );
+      L.control.zoom({ position: "bottomright" }).addTo(this.map);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
+        attribution: "&copy; OpenStreetMap",
       }).addTo(this.map);
 
       this.isInitialized = true;
@@ -500,27 +585,31 @@
       checkpoints.forEach((cp) => {
         const isSelected = cp.id === activeTargetId;
         const customIcon = L.divIcon({
-          className: 'custom-cp-marker',
-          html: `<div class="cp-pin ${isSelected ? 'is-active' : ''}"><span class="cp-code">${cp.code || 'CP'}</span></div>`,
+          className: "custom-cp-marker",
+          html: `<div class="cp-pin ${isSelected ? "is-active" : ""}"><span class="cp-code">${cp.code || "CP"}</span></div>`,
           iconSize: [40, 40],
-          iconAnchor: [20, 20]
+          iconAnchor: [20, 20],
         });
 
-        const marker = L.marker([cp.lat, cp.lng], { icon: customIcon }).addTo(this.map);
+        const marker = L.marker([cp.lat, cp.lng], { icon: customIcon }).addTo(
+          this.map,
+        );
         const popupContent = `
           <div class="map-popup-card">
             <h4>${cp.name}</h4>
-            <p>${cp.description || ''}</p>
+            <p>${cp.description || ""}</p>
             <div class="popup-info"><span class="badge-pts">+${cp.points || 10} pts</span></div>
             <button class="btn-select-target" data-cpid="${cp.id}">📍 この地点を目的地に設定</button>
           </div>
         `;
 
         marker.bindPopup(popupContent);
-        marker.on('popupopen', () => {
-          const btn = document.querySelector(`.btn-select-target[data-cpid="${cp.id}"]`);
+        marker.on("popupopen", () => {
+          const btn = document.querySelector(
+            `.btn-select-target[data-cpid="${cp.id}"]`,
+          );
           if (btn) {
-            btn.addEventListener('click', () => {
+            btn.addEventListener("click", () => {
               if (this.onSelectTargetCallback) this.onSelectTargetCallback(cp);
               this.map.closePopup();
             });
@@ -535,29 +624,35 @@
       if (!this.map) return;
       if (!this.userMarker) {
         const userIcon = L.divIcon({
-          className: 'user-location-marker',
+          className: "user-location-marker",
           html: '<div class="user-dot"></div>',
           iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          iconAnchor: [12, 12],
         });
-        this.userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(this.map);
+        this.userMarker = L.marker([lat, lng], {
+          icon: userIcon,
+          zIndexOffset: 1000,
+        }).addTo(this.map);
       } else {
         this.userMarker.setLatLng([lat, lng]);
       }
     }
 
-    setTargetLocation(lat, lng, label = '目的地') {
+    setTargetLocation(lat, lng, label = "目的地") {
       if (!this.map) return;
       if (this.targetMarker) this.map.removeLayer(this.targetMarker);
 
       const targetIcon = L.divIcon({
-        className: 'target-location-marker',
+        className: "target-location-marker",
         html: '<div class="target-flag">🏁</div>',
         iconSize: [32, 32],
-        iconAnchor: [16, 32]
+        iconAnchor: [16, 32],
       });
 
-      this.targetMarker = L.marker([lat, lng], { icon: targetIcon, zIndexOffset: 900 }).addTo(this.map);
+      this.targetMarker = L.marker([lat, lng], {
+        icon: targetIcon,
+        zIndexOffset: 900,
+      }).addTo(this.map);
     }
 
     centerOnUser(lat, lng) {
@@ -571,84 +666,7 @@
     }
   }
 
-  // --- 6. Debug Panel ---
-  class DebugPanel {
-    constructor(sensorManager, defaultTarget) {
-      this.sensors = sensorManager;
-      this.target = defaultTarget;
-      this.panelElement = null;
-
-      this.simLat = 35.681236;
-      this.simLng = 139.767125;
-      this.simHeading = 0;
-
-      this.initUI();
-    }
-
-    initUI() {
-      const debugHtml = `
-        <div id="debug-panel" class="debug-panel collapsed">
-          <button id="btn-toggle-debug" class="debug-toggle-btn">
-            <span>🛠️ 開発用デバッグシミュレーター</span>
-            <span class="toggle-icon">▲</span>
-          </button>
-          <div class="debug-content">
-            <p class="debug-desc">PCや手動テスト用スライダー。スマホ連動時は操作しなくても実機センサーが優先動作します。</p>
-            <div class="debug-control-group">
-              <label>端末の向き (Heading): <span id="debug-heading-val">0°</span></label>
-              <input type="range" id="slider-heading" min="0" max="360" value="0" step="1">
-            </div>
-            <div class="debug-control-group">
-              <label>現在地 緯度 (Lat): <span id="debug-lat-val">35.68123</span></label>
-              <input type="range" id="slider-lat" min="35.6500" max="35.7000" value="35.6812" step="0.0002">
-            </div>
-            <div class="debug-control-group">
-              <label>現在地 経度 (Lng): <span id="debug-lng-val">139.7671</span></label>
-              <input type="range" id="slider-lng" min="139.7300" max="139.8000" value="139.7671" step="0.0002">
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML('beforeend', debugHtml);
-      this.panelElement = document.getElementById('debug-panel');
-
-      this.bindEvents();
-    }
-
-    bindEvents() {
-      const toggleBtn = document.getElementById('btn-toggle-debug');
-      toggleBtn.addEventListener('click', () => {
-        this.panelElement.classList.toggle('collapsed');
-        const icon = toggleBtn.querySelector('.toggle-icon');
-        icon.textContent = this.panelElement.classList.contains('collapsed') ? '▲' : '▼';
-      });
-
-      const headingSlider = document.getElementById('slider-heading');
-      const latSlider = document.getElementById('slider-lat');
-      const lngSlider = document.getElementById('slider-lng');
-
-      headingSlider.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        document.getElementById('debug-heading-val').textContent = `${val}°`;
-        this.sensors.setManualHeading(val);
-      });
-
-      latSlider.addEventListener('input', (e) => {
-        this.simLat = parseFloat(e.target.value);
-        document.getElementById('debug-lat-val').textContent = this.simLat.toFixed(5);
-        this.sensors.setManualPosition(this.simLat, this.simLng);
-      });
-
-      lngSlider.addEventListener('input', (e) => {
-        this.simLng = parseFloat(e.target.value);
-        document.getElementById('debug-lng-val').textContent = this.simLng.toFixed(5);
-        this.sensors.setManualPosition(this.simLat, this.simLng);
-      });
-    }
-  }
-
-  // --- 7. Main Application Controller ---
+  // --- 6. Main Application Controller ---
   class AppController {
     constructor() {
       this.checkpoints = [...sampleCheckpoints];
@@ -657,7 +675,6 @@
       this.sensors = new SensorManager();
       this.arViewer = null;
       this.mapView = null;
-      this.debugPanel = null;
 
       this.latestBearing = 0;
       this.latestHeading = 0;
@@ -667,57 +684,219 @@
     }
 
     initDOM() {
-      const container = document.getElementById('three-canvas-container');
-      const video = document.getElementById('camera-video');
+      const container = document.getElementById("three-canvas-container");
+      const video = document.getElementById("camera-video");
       this.arViewer = new ARCompassViewer(container, video);
 
-      this.mapView = new MapView('leaflet-map');
+      this.mapView = new MapView("leaflet-map");
       this.mapView.init(this.currentTarget.lat, this.currentTarget.lng);
       this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id);
-      this.mapView.setTargetLocation(this.currentTarget.lat, this.currentTarget.lng, this.currentTarget.name);
+      this.mapView.setTargetLocation(
+        this.currentTarget.lat,
+        this.currentTarget.lng,
+        this.currentTarget.name,
+      );
 
-      this.debugPanel = new DebugPanel(this.sensors, this.currentTarget);
       this.updateHUDTargetInfo();
+      this.setDestination(this.currentTarget);
     }
 
     bindEvents() {
-      const tabAr = document.getElementById('tab-ar');
-      const tabMap = document.getElementById('tab-map');
+      const tabAr = document.getElementById("tab-ar");
+      const tabMap = document.getElementById("tab-map");
 
-      tabAr.addEventListener('click', () => this.switchTab('ar'));
-      tabMap.addEventListener('click', () => this.switchTab('map'));
+      tabAr.addEventListener("click", () => this.switchTab("ar"));
+      tabMap.addEventListener("click", () => this.switchTab("map"));
 
       this.mapView.onSelectTarget((target) => {
         this.setDestination(target);
-        this.switchTab('ar');
+        this.switchTab("ar");
       });
 
-      document.getElementById('btn-recenter').addEventListener('click', () => {
+      document.getElementById("btn-recenter").addEventListener("click", () => {
         if (this.sensors.currentPosition) {
-          this.mapView.centerOnUser(this.sensors.currentPosition.lat, this.sensors.currentPosition.lng);
+          this.mapView.centerOnUser(
+            this.sensors.currentPosition.lat,
+            this.sensors.currentPosition.lng,
+          );
         } else {
-          this.mapView.centerOnUser(this.currentTarget.lat, this.currentTarget.lng);
+          this.mapView.centerOnUser(
+            this.currentTarget.lat,
+            this.currentTarget.lng,
+          );
         }
       });
 
-      const startBtn = document.getElementById('btn-start-app');
-      const overlay = document.getElementById('permission-overlay');
+      const startBtn = document.getElementById("btn-start-app");
+      const overlay = document.getElementById("permission-overlay");
+      const httpWarning = document.getElementById("http-warning");
 
-      startBtn.addEventListener('click', () => {
-        overlay.style.display = 'none';
-        this.sensors.requestPermissions();
+      if (
+        httpWarning &&
+        !window.isSecureContext &&
+        location.hostname !== "localhost" &&
+        location.hostname !== "127.0.0.1"
+      ) {
+        httpWarning.style.display = "block";
+      }
+
+      startBtn.addEventListener("click", () => {
+        overlay.style.display = "none";
         this.arViewer.startCamera();
+        this.sensors.start();
       });
 
       // リアルタイムGPS更新時に現在地から目的地への方向・距離を即座に再計算して追従
       this.sensors.onPositionChange((pos) => this.handlePositionUpdate(pos));
-      this.sensors.onHeadingChange((heading) => this.handleHeadingUpdate(heading));
+      this.sensors.onHeadingChange((heading) =>
+        this.handleHeadingUpdate(heading),
+      );
 
       this.sensors.onError((msg) => {
-        console.warn('Sensor Alert:', msg);
-        const text = document.getElementById('chip-gps-text');
+        console.warn("Sensor Alert:", msg);
+        const text = document.getElementById("chip-gps-text");
         if (text) text.textContent = msg;
       });
+
+      this.initQRScanner();
+    }
+
+    initQRScanner() {
+      const btnOpenQr = document.getElementById("btn-open-qr");
+      const btnCloseQr = document.getElementById("btn-close-qr");
+      const qrModal = document.getElementById("qr-modal");
+      const qrResult = document.getElementById("qr-scan-result");
+      const fileInput = document.getElementById("qr-file-input");
+
+      const urlConfirmModal = document.getElementById("url-confirm-modal");
+      const urlConfirmText = document.getElementById("url-confirm-text");
+      const btnOpenUrl = document.getElementById("btn-open-url");
+      const btnCancelUrl = document.getElementById("btn-cancel-url");
+
+      let html5QrCode = null;
+
+      const handleScannedCode = (decodedText) => {
+        console.log("QR Code Scanned:", decodedText);
+        this.stopQrScanner(html5QrCode, qrModal);
+
+        let targetUrl = decodedText.trim();
+        if (!/^https?:\/\//i.test(targetUrl)) {
+          if (/^[a-z0-9-]+(\.[a-z0-9-]+)+/i.test(targetUrl)) {
+            targetUrl = "https://" + targetUrl;
+          }
+        }
+
+        const textUpper = decodedText.toUpperCase();
+        let matchedCP = this.checkpoints.find(
+          (cp) =>
+            cp.id.toUpperCase() === textUpper ||
+            cp.code.toUpperCase() === textUpper ||
+            cp.name.toUpperCase().includes(textUpper) ||
+            textUpper.includes(cp.code.toUpperCase())
+        );
+
+        if (!matchedCP) {
+          const numMatch = textUpper.match(/\d+/);
+          if (numMatch) {
+            const cpNum = numMatch[0].padStart(2, "0");
+            matchedCP = this.checkpoints.find(
+              (cp) => cp.id.endsWith(cpNum) || cp.code.endsWith(cpNum)
+            );
+          }
+        }
+
+        if (matchedCP) {
+          this.setDestination(matchedCP);
+        }
+
+        if (urlConfirmModal) {
+          if (urlConfirmText) urlConfirmText.textContent = targetUrl;
+          if (btnOpenUrl) {
+            btnOpenUrl.href = /^https?:\/\//i.test(targetUrl)
+              ? targetUrl
+              : `https://www.google.com/search?q=${encodeURIComponent(targetUrl)}`;
+          }
+          urlConfirmModal.classList.add("active");
+        }
+      };
+
+      if (btnCancelUrl) {
+        btnCancelUrl.addEventListener("click", () => {
+          if (urlConfirmModal) urlConfirmModal.classList.remove("active");
+        });
+      }
+
+      if (btnOpenUrl) {
+        btnOpenUrl.addEventListener("click", () => {
+          if (urlConfirmModal) urlConfirmModal.classList.remove("active");
+        });
+      }
+
+      if (btnOpenQr) {
+        btnOpenQr.addEventListener("click", () => {
+          qrModal.classList.add("active");
+          if (qrResult) qrResult.style.display = "none";
+
+          if (typeof Html5Qrcode !== "undefined") {
+            try {
+              if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("qr-reader");
+              }
+              html5QrCode
+                .start(
+                  { facingMode: "environment" },
+                  { fps: 10, qrbox: { width: 200, height: 200 } },
+                  handleScannedCode,
+                  () => {}
+                )
+                .catch((err) => {
+                  console.warn("Camera QR Scanner Start Error:", err);
+                });
+            } catch (e) {
+              console.warn("Html5Qrcode Init Error:", e);
+            }
+          }
+        });
+      }
+
+      if (fileInput) {
+        fileInput.addEventListener("change", (e) => {
+          if (e.target.files.length === 0) return;
+          const imageFile = e.target.files[0];
+          if (typeof Html5Qrcode !== "undefined") {
+            const scanner = html5QrCode || new Html5Qrcode("qr-reader");
+            scanner
+              .scanFile(imageFile, true)
+              .then(handleScannedCode)
+              .catch((err) => {
+                if (qrResult) {
+                  qrResult.textContent = "画像からQRコードを検出できませんでした。";
+                  qrResult.style.display = "block";
+                }
+              });
+          }
+        });
+      }
+
+      if (btnCloseQr) {
+        btnCloseQr.addEventListener("click", () => {
+          this.stopQrScanner(html5QrCode, qrModal);
+        });
+      }
+    }
+
+    stopQrScanner(scannerInstance, modalEl) {
+      if (modalEl) modalEl.classList.remove("active");
+      if (scannerInstance) {
+        scannerInstance
+          .stop()
+          .catch(() => {})
+          .then(() => {
+            try {
+              scannerInstance.clear();
+            } catch (e) {}
+          });
+      }
     }
 
     setDestination(target) {
@@ -731,21 +910,28 @@
       if (this.sensors.currentPosition) {
         this.handlePositionUpdate(this.sensors.currentPosition);
       } else {
-        const uLat = this.debugPanel.simLat;
-        const uLng = this.debugPanel.simLng;
-        this.latestBearing = calculateBearing(uLat, uLng, target.lat, target.lng);
+        const uLat = this.checkpoints[0].lat;
+        const uLng = this.checkpoints[0].lng;
+        this.latestBearing = calculateBearing(
+          uLat,
+          uLng,
+          target.lat,
+          target.lng,
+        );
         const dist = calculateDistance(uLat, uLng, target.lat, target.lng);
 
-        const distEl = document.getElementById('hud-distance-val');
+        const distEl = document.getElementById("hud-distance-val");
         if (distEl) distEl.textContent = formatDistance(dist);
 
         const relativeAngle = this.latestBearing - this.latestHeading;
-        this.arViewer.resetAngle(relativeAngle);
+        if (this.arViewer) {
+          this.arViewer.resetAngle(relativeAngle);
+        }
       }
     }
 
     updateHUDTargetInfo() {
-      const nameEl = document.getElementById('hud-target-name');
+      const nameEl = document.getElementById("hud-target-name");
       if (nameEl) nameEl.textContent = this.currentTarget.name;
     }
 
@@ -754,11 +940,12 @@
      * ユーザーの位置が変わると動的に目的地への方位角・距離を連続追従
      */
     handlePositionUpdate(pos) {
-      const dot = document.getElementById('chip-gps-dot');
-      const text = document.getElementById('chip-gps-text');
-      if (dot) dot.classList.add('active');
+      const dot = document.getElementById("chip-gps-dot");
+      const text = document.getElementById("chip-gps-text");
+      if (dot) dot.classList.add("active");
       if (text) {
-        const accStr = pos.accuracy != null ? ` (±${Math.round(pos.accuracy)}m)` : '';
+        const accStr =
+          pos.accuracy != null ? ` (±${Math.round(pos.accuracy)}m)` : "";
         text.textContent = `GPS: 測位中${accStr}`;
       }
 
@@ -766,10 +953,20 @@
       this.mapView.updateUserLocation(pos.lat, pos.lng);
 
       // ユーザーの「現在の最新GPS位置 (pos.lat, pos.lng)」から「目的地 (currentTarget.lat, currentTarget.lng)」への方位角と距離を計算
-      const dist = calculateDistance(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
-      this.latestBearing = calculateBearing(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
+      const dist = calculateDistance(
+        pos.lat,
+        pos.lng,
+        this.currentTarget.lat,
+        this.currentTarget.lng,
+      );
+      this.latestBearing = calculateBearing(
+        pos.lat,
+        pos.lng,
+        this.currentTarget.lat,
+        this.currentTarget.lng,
+      );
 
-      const distEl = document.getElementById('hud-distance-val');
+      const distEl = document.getElementById("hud-distance-val");
       if (distEl) distEl.textContent = formatDistance(dist);
 
       // AR矢印の向く相対角度 (Bearing - Heading) をリアルタイム更新
@@ -777,11 +974,11 @@
     }
 
     handleHeadingUpdate(heading) {
-      const dot = document.getElementById('chip-compass-dot');
-      const text = document.getElementById('chip-compass-text');
+      const dot = document.getElementById("chip-compass-dot");
+      const text = document.getElementById("chip-compass-text");
       if (dot) {
-        dot.classList.add('active');
-        dot.style.backgroundColor = '#10b981';
+        dot.classList.add("active");
+        dot.style.backgroundColor = "#10b981";
       }
       if (text) text.textContent = `コンパス: ${Math.round(heading)}°`;
 
@@ -791,25 +988,27 @@
 
     updateARCompassAngle() {
       const relativeAngle = this.latestBearing - this.latestHeading;
-      this.arViewer.setRelativeAngle(relativeAngle);
+      if (this.arViewer) {
+        this.arViewer.setRelativeAngle(relativeAngle);
+      }
     }
 
     switchTab(tab) {
-      const tabAr = document.getElementById('tab-ar');
-      const tabMap = document.getElementById('tab-map');
-      const viewAr = document.getElementById('ar-view');
-      const viewMap = document.getElementById('map-view');
+      const tabAr = document.getElementById("tab-ar");
+      const tabMap = document.getElementById("tab-map");
+      const viewAr = document.getElementById("ar-view");
+      const viewMap = document.getElementById("map-view");
 
-      if (tab === 'ar') {
-        tabAr.classList.add('active');
-        tabMap.classList.remove('active');
-        viewAr.classList.add('active');
-        viewMap.classList.remove('active');
+      if (tab === "ar") {
+        tabAr.classList.add("active");
+        tabMap.classList.remove("active");
+        viewAr.classList.add("active");
+        viewMap.classList.remove("active");
       } else {
-        tabMap.classList.add('active');
-        tabAr.classList.remove('active');
-        viewMap.classList.add('active');
-        viewAr.classList.remove('active');
+        tabMap.classList.add("active");
+        tabAr.classList.remove("active");
+        viewMap.classList.add("active");
+        viewAr.classList.remove("active");
         if (this.mapView && this.mapView.map) {
           setTimeout(() => this.mapView.map.invalidateSize(), 200);
         }
@@ -817,7 +1016,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener("DOMContentLoaded", () => {
     window.app = new AppController();
   });
 })();
