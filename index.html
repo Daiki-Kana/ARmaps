@@ -9,7 +9,7 @@
     <title>AR Rogaining Navigator</title>
     <meta
       name="description"
-      content="ロゲイニング向け AR リアルタイム道案内 & コンパスナビゲーション アプリ"
+      content="ロゲイニング向け AR リアルタイム道案内 & ナビゲーション アプリ"
     />
 
     <!-- Google Fonts -->
@@ -147,7 +147,9 @@
     <!-- QRコードスキャン モーダル -->
     <div id="qr-modal" class="qr-modal">
       <div class="qr-modal-content">
-        <button id="btn-close-qr" class="btn-close-modal" aria-label="閉じる">✕</button>
+        <button id="btn-close-qr" class="btn-close-modal" aria-label="閉じる">
+          ✕
+        </button>
         <div class="qr-header">
           <h3>QRコードスキャン</h3>
           <p>QRコードを枠内にかざしてください</p>
@@ -155,11 +157,20 @@
         <div class="qr-scanner-box">
           <div id="qr-reader"></div>
         </div>
-        <div id="qr-scan-result" class="qr-scan-result" style="display:none;"></div>
+        <div
+          id="qr-scan-result"
+          class="qr-scan-result"
+          style="display: none"
+        ></div>
         <div class="qr-actions">
           <label class="btn-qr-file-upload">
             画像ファイルから読み込む
-            <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
+            <input
+              type="file"
+              id="qr-file-input"
+              accept="image/*"
+              style="display: none"
+            />
           </label>
         </div>
       </div>
@@ -172,7 +183,14 @@
         <p id="url-confirm-text" class="url-text">https://...</p>
         <div class="url-confirm-actions">
           <button id="btn-cancel-url" class="btn-url-cancel">キャンセル</button>
-          <a id="btn-open-url" class="btn-url-open" href="#" target="_blank" rel="noopener noreferrer">開く</a>
+          <a
+            id="btn-open-url"
+            class="btn-url-open"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            >開く</a
+          >
         </div>
       </div>
     </div>
