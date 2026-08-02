@@ -18,8 +18,9 @@ import { calculateBearing, calculateDistance, formatDistance } from './modules/g
 
 class AppController {
   constructor() {
-    this.checkpoints = sampleCheckpoints;
-    this.currentTarget = sampleCheckpoints.length > 0 ? sampleCheckpoints[0] : null;
+    const urlCheckpoints = this.loadFromUrlHash();
+    this.checkpoints = (urlCheckpoints && urlCheckpoints.length > 0) ? urlCheckpoints : sampleCheckpoints;
+    this.currentTarget = this.checkpoints.length > 0 ? this.checkpoints[0] : null;
 
     // 完了（訪問済み）チェックポイントのID集合
     const savedVisited = localStorage.getItem('visited_checkpoints');
@@ -183,6 +184,7 @@ class AppController {
     });
 
     this.initQRScanner();
+    this.initURLInputModal();
   }
 
   initQRScanner() {
@@ -523,6 +525,121 @@ class AppController {
       if (this.mapView && this.mapView.map) {
         setTimeout(() => this.mapView.map.invalidateSize(), 200);
       }
+    }
+  }
+
+  /**
+   * マップURLインポートモーダルの制御初期化
+   */
+  initURLInputModal() {
+    const btnOpen = document.getElementById('btn-open-url-modal');
+    const modal = document.getElementById('url-input-modal');
+    const btnClose = document.getElementById('btn-close-url-input');
+    const btnCancel = document.getElementById('btn-cancel-url-input');
+    const btnLoad = document.getElementById('btn-load-url-course');
+    const inputField = document.getElementById('course-url-input');
+
+    if (btnOpen) {
+      btnOpen.addEventListener('click', () => {
+        if (modal) {
+          modal.classList.add('active');
+          if (inputField) inputField.value = '';
+        }
+      });
+    }
+
+    const closeModal = () => {
+      if (modal) modal.classList.remove('active');
+    };
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+    if (btnLoad) {
+      btnLoad.addEventListener('click', () => {
+        if (!inputField) return;
+        const urlStr = inputField.value.trim();
+        if (!urlStr) {
+          alert('URLを入力してください。');
+          return;
+        }
+
+        try {
+          let hashPart = '';
+          if (urlStr.includes('#course=')) {
+            hashPart = '#course=' + urlStr.split('#course=')[1];
+          } else if (urlStr.startsWith('course=')) {
+            hashPart = '#' + urlStr;
+          } else {
+            alert('有効なコースURLではありません。( #course= が含まれていません )');
+            return;
+          }
+
+          window.location.hash = hashPart;
+          const newCheckpoints = this.loadFromUrlHash();
+          if (newCheckpoints && newCheckpoints.length > 0) {
+            this.checkpoints = newCheckpoints;
+            this.setDestination(this.checkpoints[0]);
+            this.mapView.renderCheckpoints(
+              this.checkpoints,
+              this.currentTarget ? this.currentTarget.id : null,
+              this.visitedIds
+            );
+            closeModal();
+            alert(`コースデータ（${newCheckpoints.length}件のポイント）を正常に読み込みました。`);
+          } else {
+            alert('コースデータの解析に失敗しました。');
+          }
+        } catch (e) {
+          console.error(e);
+          alert('URLの読み込み中にエラーが発生しました。');
+        }
+      });
+    }
+  }
+
+  /**
+   * URLハッシュ (#course=...) からコースデータ（Base64 JSON）を解析・ロード
+   */
+  loadFromUrlHash() {
+    try {
+      const hash = window.location.hash;
+      if (!hash || !hash.includes('course=')) return null;
+
+      const base64 = hash.split('course=')[1];
+      if (!base64) return null;
+
+      const jsonStr = decodeURIComponent(escape(atob(base64)));
+      const data = JSON.parse(jsonStr);
+
+      if (data.p && Array.isArray(data.p)) {
+        const checkpoints = data.p.map((cp) => ({
+          id: cp.i || '',
+          name: cp.n || '',
+          code: cp.k || '',
+          lat: parseFloat(cp.a) || 0,
+          lng: parseFloat(cp.g) || 0,
+          points: parseInt(cp.s, 10) || 0,
+          description: cp.d || '',
+        }));
+
+        if (data.c) {
+          console.log(`📍 コース読み込み: ${data.c.n || '名称未設定'}`);
+          this.courseInfo = {
+            name: data.c.n || '',
+            timeLimit: data.c.t || 0,
+            description: data.c.d || '',
+          };
+        }
+
+        console.log(`✅ URLハッシュから${checkpoints.length}個のチェックポイントを読み込みました`);
+        return checkpoints.length > 0 ? checkpoints : null;
+      }
+
+      return null;
+    } catch (e) {
+      console.warn('URLハッシュからのデータ読み込みに失敗:', e);
+      return null;
     }
   }
 }

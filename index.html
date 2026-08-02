@@ -64,9 +64,14 @@
             <span>マップ選択</span>
           </button>
         </nav>
-        <button id="btn-open-qr" class="btn-qr-scan" title="QRコード読み取り">
-          <span>QRスキャン</span>
-        </button>
+        <div class="header-actions">
+          <button id="btn-open-url-modal" class="btn-header-action" title="マップURLインポート">
+            <span>URL読込</span>
+          </button>
+          <button id="btn-open-qr" class="btn-qr-scan" title="QRコード読み取り">
+            <span>QRスキャン</span>
+          </button>
+        </div>
       </header>
 
       <!-- ARコンパスビュー -->
@@ -255,6 +260,31 @@
             rel="noopener noreferrer"
             >開く</a
           >
+        </div>
+      </div>
+    </div>
+
+    <!-- マップURLインポート モーダル -->
+    <div id="url-input-modal" class="modal-overlay">
+      <div class="modal-card">
+        <button id="btn-close-url-input" class="btn-close-modal" aria-label="閉じる">
+          ✕
+        </button>
+        <div class="modal-header">
+          <h3>マップURLのインポート</h3>
+          <p>コースデータが含まれるURL（または #course=...）を入力してください</p>
+        </div>
+        <div class="modal-body">
+          <textarea
+            id="course-url-input"
+            class="url-input-textarea"
+            placeholder="例: https://...#course=... または #course=..."
+            rows="4"
+          ></textarea>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-cancel-url-input" class="btn-modal-secondary">キャンセル</button>
+          <button id="btn-load-url-course" class="btn-modal-primary">コースを読み込む</button>
         </div>
       </div>
     </div>
