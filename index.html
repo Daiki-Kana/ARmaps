@@ -32,8 +32,11 @@
     ></script>
 
     <!-- ES Module Shims (Import Map Polyfill for older Safari) -->
-    <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.min.js"></script>
-    
+    <script
+      async
+      src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.min.js"
+    ></script>
+
     <!-- Import Map: ベアモジュール指定子 'three' をCDNのESM版に解決 -->
     <script type="importmap">
       {
@@ -148,8 +151,11 @@
             "
           >
             <strong>⚠️ HTTP接続ではセンサーが動作しません</strong><br />
-            Safari / Chrome 等のスマホブラウザではセキュリティ規定により、非セキュア接続 (http://) での GPS・カメラ・コンパスがブロックされます。<br />
-            URLの先頭を <strong>https://</strong> に変更してアクセスしてください。
+            Safari / Chrome
+            等のスマホブラウザではセキュリティ規定により、非セキュア接続
+            (http://) での GPS・カメラ・コンパスがブロックされます。<br />
+            URLの先頭を
+            <strong>https://</strong> に変更してアクセスしてください。
           </div>
 
           <div
@@ -166,9 +172,11 @@
               line-height: 1.4;
             "
           >
-            💡 <strong>「この接続はプライベートではありません」と出る場合</strong><br />
+            <strong>「この接続はプライベートではありません」と出る場合</strong
+            ><br />
             Safari: 「詳細を表示」→「このウェブサイトを閲覧」を選択<br />
-            Chrome: 「詳細設定」→「～にアクセスする（安全ではありません）」を選択
+            Chrome:
+            「詳細設定」→「～にアクセスする（安全ではありません）」を選択
           </div>
 
           <div
@@ -187,8 +195,10 @@
             "
           >
             <strong>⚠️ ローカルIPでのアクセスに関する注意</strong><br />
-            iOS Safariでは、自己署名証明書によるIPアドレス（192.168.x.x 等）でのHTTPS接続時、セキュリティ制限によりカメラや各種センサーが強制ブロックされます。<br />
-            機能しない場合は <strong>ngrok等のトンネルツール</strong> や <strong>GitHub Pages</strong> をご利用ください。
+            iOS Safariでは、自己署名証明書によるIPアドレス（192.168.x.x
+            等）でのHTTPS接続時、セキュリティ制限によりカメラや各種センサーが強制ブロックされます。<br />
+            機能しない場合は <strong>ngrok等のトンネルツール</strong> や
+            <strong>GitHub Pages</strong> をご利用ください。
           </div>
 
           <button id="btn-start-app" class="btn-start-ar">

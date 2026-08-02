@@ -19,7 +19,7 @@ import { calculateBearing, calculateDistance, formatDistance } from './modules/g
 class AppController {
   constructor() {
     this.checkpoints = sampleCheckpoints;
-    this.currentTarget = sampleCheckpoints[0]; // デフォルト目的地: CP01
+    this.currentTarget = sampleCheckpoints.length > 0 ? sampleCheckpoints[0] : null;
 
     // 完了（訪問済み）チェックポイントのID集合
     const savedVisited = localStorage.getItem('visited_checkpoints');
@@ -48,14 +48,24 @@ class AppController {
 
     // 2. マップビューの初期化
     this.mapView = new MapView('leaflet-map');
-    this.mapView.init(this.currentTarget.lat, this.currentTarget.lng);
-    this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id, this.visitedIds);
-    this.mapView.setTargetLocation(this.currentTarget.lat, this.currentTarget.lng, this.currentTarget.name);
+    const initialLat = this.currentTarget ? this.currentTarget.lat : 35.681236;
+    const initialLng = this.currentTarget ? this.currentTarget.lng : 139.767125;
+    this.mapView.init(initialLat, initialLng);
+    this.mapView.renderCheckpoints(
+      this.checkpoints,
+      this.currentTarget ? this.currentTarget.id : null,
+      this.visitedIds
+    );
+    if (this.currentTarget) {
+      this.mapView.setTargetLocation(this.currentTarget.lat, this.currentTarget.lng, this.currentTarget.name);
+    }
 
     // 初期HUDおよびスコア表示更新
     this.updateHUDTargetInfo();
     this.updateScoreUI();
-    this.setDestination(this.currentTarget);
+    if (this.currentTarget) {
+      this.setDestination(this.currentTarget);
+    }
   }
 
   bindEvents() {
@@ -81,8 +91,10 @@ class AppController {
     document.getElementById('btn-recenter').addEventListener('click', () => {
       if (this.sensors.currentPosition) {
         this.mapView.centerOnUser(this.sensors.currentPosition.lat, this.sensors.currentPosition.lng);
-      } else {
+      } else if (this.currentTarget) {
         this.mapView.centerOnUser(this.currentTarget.lat, this.currentTarget.lng);
+      } else {
+        this.mapView.centerOnUser(35.681236, 139.767125);
       }
     });
 
@@ -318,9 +330,11 @@ class AppController {
     this.currentTarget = target;
     this.updateHUDTargetInfo();
 
-    // マップ表示も更新
-    this.mapView.renderCheckpoints(this.checkpoints, target.id, this.visitedIds);
-    this.mapView.setTargetLocation(target.lat, target.lng, target.name);
+    if (target) {
+      // マップ表示も更新
+      this.mapView.renderCheckpoints(this.checkpoints, target.id, this.visitedIds);
+      this.mapView.setTargetLocation(target.lat, target.lng, target.name);
+    }
 
     // 直ちに方位角・距離を再計算
     if (this.sensors.currentPosition) {
@@ -347,7 +361,11 @@ class AppController {
 
     // UI及びスコアを更新
     this.updateScoreUI();
-    this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id, this.visitedIds);
+    this.mapView.renderCheckpoints(
+      this.checkpoints,
+      this.currentTarget ? this.currentTarget.id : null,
+      this.visitedIds
+    );
 
     // ポイント変動フィードバックを表示
     if (cp && cp.points) {
@@ -408,7 +426,9 @@ class AppController {
    */
   updateHUDTargetInfo() {
     const nameEl = document.getElementById('hud-target-name');
-    if (nameEl) nameEl.textContent = this.currentTarget.name;
+    if (nameEl) {
+      nameEl.textContent = this.currentTarget ? this.currentTarget.name : '目的地未設定';
+    }
   }
 
   /**
@@ -428,12 +448,19 @@ class AppController {
     this.mapView.updateUserLocation(pos.lat, pos.lng);
 
     // 3. 目的地までの距離と Bearing を計算
-    this.latestDistance = calculateDistance(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
-    this.latestBearing = calculateBearing(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
+    if (this.currentTarget) {
+      this.latestDistance = calculateDistance(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
+      this.latestBearing = calculateBearing(pos.lat, pos.lng, this.currentTarget.lat, this.currentTarget.lng);
+    } else {
+      this.latestDistance = null;
+      this.latestBearing = 0;
+    }
 
     // HUD の距離表示更新
     const distEl = document.getElementById('hud-distance-val');
-    if (distEl) distEl.textContent = formatDistance(this.latestDistance);
+    if (distEl) {
+      distEl.textContent = this.latestDistance !== null ? formatDistance(this.latestDistance) : '--- m';
+    }
 
     // AR矢印の角度を即座に更新
     this.updateARCompassAngle();
