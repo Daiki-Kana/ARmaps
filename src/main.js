@@ -6,6 +6,8 @@
  *  - GPS未取得でも方位変化だけで矢印が回転するように修正
  *  - handlePositionUpdate 内で bearing と distance を常に保持
  *  - センサーエラー時に HUD にフィードバック表示
+ *  - ボタンクリックハンドラ内でDeviceOrientation権限を取得し結果をsensorsに渡す
+ *  - ポイント変動時のアニメーションフィードバック追加
  */
 
 import { sampleCheckpoints } from './data/checkpoints.js';
@@ -18,6 +20,10 @@ class AppController {
   constructor() {
     this.checkpoints = sampleCheckpoints;
     this.currentTarget = sampleCheckpoints[0]; // デフォルト目的地: CP01
+
+    // 完了（訪問済み）チェックポイントのID集合
+    const savedVisited = localStorage.getItem('visited_checkpoints');
+    this.visitedIds = new Set(savedVisited ? JSON.parse(savedVisited) : []);
 
     this.sensors = new SensorManager();
     this.arViewer = null;
@@ -43,11 +49,12 @@ class AppController {
     // 2. マップビューの初期化
     this.mapView = new MapView('leaflet-map');
     this.mapView.init(this.currentTarget.lat, this.currentTarget.lng);
-    this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id);
+    this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id, this.visitedIds);
     this.mapView.setTargetLocation(this.currentTarget.lat, this.currentTarget.lng, this.currentTarget.name);
 
-    // 初期HUD表示更新
+    // 初期HUDおよびスコア表示更新
     this.updateHUDTargetInfo();
+    this.updateScoreUI();
     this.setDestination(this.currentTarget);
   }
 
@@ -65,6 +72,11 @@ class AppController {
       this.switchTab('ar'); // 自動的にAR画面へ遷移
     });
 
+    // マップでチェックポイントの完了状態がトグルされた時
+    this.mapView.onToggleVisited((cp) => {
+      this.toggleVisitedCheckpoint(cp.id);
+    });
+
     // マップ再センタリングボタン
     document.getElementById('btn-recenter').addEventListener('click', () => {
       if (this.sensors.currentPosition) {
@@ -74,22 +86,65 @@ class AppController {
       }
     });
 
+    // 非セキュア環境 (HTTP接続かつ非localhost) の自動判定
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const httpWarning = document.getElementById('http-warning');
+    if (!window.isSecureContext && !isLocalhost && httpWarning) {
+      httpWarning.style.display = 'block';
+    }
+
+    // ローカルIPでのアクセス警告 (Safari等で自己署名証明書使用時にセンサー類がブロックされる問題)
+    const isIpAddress = /^[0-9]+(\.[0-9]+){3}$/.test(location.hostname);
+    const ipWarning = document.getElementById('ip-warning');
+    if (location.protocol === 'https:' && isIpAddress && !isLocalhost && ipWarning) {
+      ipWarning.style.display = 'block';
+    }
+
     // 「ARナビゲーションを開始」オーバーレイボタン
     const startBtn = document.getElementById('btn-start-app');
     const overlay = document.getElementById('permission-overlay');
 
-    startBtn.addEventListener('click', async () => {
-      overlay.style.display = 'none';
+    if (startBtn) {
+      startBtn.addEventListener('click', () => {
+        if (overlay) overlay.style.display = 'none';
 
-      // カメラ起動
-      const cameraOk = await this.arViewer.startCamera();
-      if (!cameraOk) {
-        console.warn('カメラを起動できませんでした。PCの場合はデバッグモードをご利用ください。');
-      }
+        // iOS Safari等のモバイルブラウザでは、ユーザー操作（クリック）の同期コンテキスト内で
+        // 権限リクエスト（カメラ、方位、GPS）を同時に発火させないと、ユーザー操作とみなされず
+        // 後続のリクエストがブロックされる（機能しない）問題が発生する。
+        // そのため、await を使わずに Promise を同時並行で発火させる。
 
-      // センサー起動 (位置情報 & iOSコンパス)
-      await this.sensors.start();
-    });
+        // 1. 方位センサー権限 (Safari用)
+        let orientationPromise = Promise.resolve(true);
+        if (
+          typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function'
+        ) {
+          orientationPromise = DeviceOrientationEvent.requestPermission()
+            .then(res => res === 'granted')
+            .catch(e => {
+              console.warn('DeviceOrientation error:', e);
+              return false;
+            });
+        }
+
+        // 2. カメラ起動
+        if (this.arViewer) {
+          this.arViewer.startCamera().catch(e => {
+            console.warn('カメラ起動エラー:', e);
+          });
+        }
+
+        // 3. センサー (GPS / コンパス) 起動の開始
+        // 方位権限の結果を待ってから開始する
+        orientationPromise.then(granted => {
+          if (this.sensors) {
+            this.sensors.start(granted).catch(e => {
+              console.warn('センサー起動エラー:', e);
+            });
+          }
+        });
+      });
+    }
 
     // 位置情報チェンジイベント
     this.sensors.onPositionChange((pos) => {
@@ -104,9 +159,15 @@ class AppController {
     // エラーハンドリング
     this.sensors.onError((msg) => {
       console.warn('Sensor Warning:', msg);
-      // エラーをHUDにも一時的に表示
-      const text = document.getElementById('chip-gps-text');
-      if (text) text.textContent = 'GPS: エラー';
+      // エラーをHUDにフィードバック表示
+      const gpsText = document.getElementById('chip-gps-text');
+      const compassText = document.getElementById('chip-compass-text');
+      if (msg.includes('GPS') || msg.includes('位置')) {
+        if (gpsText) gpsText.textContent = 'GPS: エラー';
+      }
+      if (msg.includes('方位') || msg.includes('コンパス') || msg.includes('DeviceOrientation')) {
+        if (compassText) compassText.textContent = 'コンパス: エラー';
+      }
     });
 
     this.initQRScanner();
@@ -258,13 +319,88 @@ class AppController {
     this.updateHUDTargetInfo();
 
     // マップ表示も更新
-    this.mapView.renderCheckpoints(this.checkpoints, target.id);
+    this.mapView.renderCheckpoints(this.checkpoints, target.id, this.visitedIds);
     this.mapView.setTargetLocation(target.lat, target.lng, target.name);
 
     // 直ちに方位角・距離を再計算
     if (this.sensors.currentPosition) {
       this.handlePositionUpdate(this.sensors.currentPosition);
     }
+  }
+
+  /**
+   * チェックポイントの完了状態を切り替え
+   */
+  toggleVisitedCheckpoint(cpId) {
+    // ポイント変動量を計算するために、事前に変動前のポイントを記録
+    const cp = this.checkpoints.find(c => c.id === cpId);
+    const wasVisited = this.visitedIds.has(cpId);
+
+    if (wasVisited) {
+      this.visitedIds.delete(cpId);
+    } else {
+      this.visitedIds.add(cpId);
+    }
+
+    // localStorage に保存
+    localStorage.setItem('visited_checkpoints', JSON.stringify([...this.visitedIds]));
+
+    // UI及びスコアを更新
+    this.updateScoreUI();
+    this.mapView.renderCheckpoints(this.checkpoints, this.currentTarget.id, this.visitedIds);
+
+    // ポイント変動フィードバックを表示
+    if (cp && cp.points) {
+      const delta = wasVisited ? -cp.points : cp.points;
+      this.showScoreFeedback(delta);
+    }
+  }
+
+  /**
+   * 合計ポイントを計算してUIに反映
+   */
+  updateScoreUI() {
+    let totalScore = 0;
+    this.checkpoints.forEach((cp) => {
+      if (this.visitedIds.has(cp.id)) {
+        totalScore += cp.points || 0;
+      }
+    });
+
+    const scoreValEl = document.getElementById('total-score-val');
+    if (scoreValEl) {
+      scoreValEl.textContent = `${totalScore} pts`;
+    }
+
+    // スコアバナーにパルスアニメーション
+    const banner = document.querySelector('.map-banner-overlay');
+    if (banner) {
+      banner.classList.remove('score-pulse');
+      // リフロー強制でアニメーションリセット
+      void banner.offsetWidth;
+      banner.classList.add('score-pulse');
+    }
+  }
+
+  /**
+   * ポイント変動トースト表示
+   */
+  showScoreFeedback(delta) {
+    const toast = document.getElementById('score-toast');
+    if (!toast) return;
+
+    const sign = delta > 0 ? '+' : '';
+    toast.textContent = `${sign}${delta} pts`;
+    toast.className = 'score-toast ' + (delta > 0 ? 'score-plus' : 'score-minus');
+
+    // 表示アニメーション
+    toast.classList.add('visible');
+
+    // 一定時間後に非表示
+    clearTimeout(this._scoreToastTimer);
+    this._scoreToastTimer = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 1800);
   }
 
   /**

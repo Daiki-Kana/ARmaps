@@ -31,14 +31,23 @@
       crossorigin=""
     ></script>
 
-    <!-- Three.js Global Script -->
-    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <!-- ES Module Shims (Import Map Polyfill for older Safari) -->
+    <script async src="https://unpkg.com/es-module-shims@1.10.0/dist/es-module-shims.min.js"></script>
+    
+    <!-- Import Map: ベアモジュール指定子 'three' をCDNのESM版に解決 -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
 
     <!-- HTML5 QR Code Scanner Script -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <!-- App CSS -->
-    <link rel="stylesheet" href="./src/style.css?v=20260726_16" />
+    <link rel="stylesheet" href="./src/style.css?v=20260802_01" />
   </head>
   <body>
     <div id="app">
@@ -100,14 +109,20 @@
 
         <div class="map-floating-controls">
           <button id="btn-recenter" class="map-btn" title="現在地に移動">
-            ⌖
+            <span class="btn-icon">⌖</span>
+            <span class="btn-text">現在地</span>
           </button>
         </div>
 
-        <!-- マップ上部の案内バナー -->
+        <!-- マップ上部のスコアバナー -->
         <div class="map-banner-overlay">
-          <span>チェックポイントをタップして目的地を選択してください</span>
+          <span class="score-icon">🏆</span>
+          <span class="score-label">合計ポイント:</span>
+          <span id="total-score-val" class="score-value">0 pts</span>
         </div>
+
+        <!-- ポイント変動フィードバックトースト -->
+        <div id="score-toast" class="score-toast"></div>
       </section>
 
       <!-- カメラ・センサー許可開始オーバーレイ -->
@@ -121,22 +136,61 @@
             id="http-warning"
             style="
               display: none;
-              background: rgba(239, 68, 68, 0.2);
+              background: rgba(239, 68, 68, 0.25);
               border: 1px solid #ef4444;
               color: #ffffff;
-              padding: 10px 14px;
-              border-radius: 8px;
+              padding: 12px 14px;
+              border-radius: 10px;
               font-size: 0.85rem;
               margin-bottom: 14px;
+              text-align: left;
+              line-height: 1.5;
+            "
+          >
+            <strong>⚠️ HTTP接続ではセンサーが動作しません</strong><br />
+            Safari / Chrome 等のスマホブラウザではセキュリティ規定により、非セキュア接続 (http://) での GPS・カメラ・コンパスがブロックされます。<br />
+            URLの先頭を <strong>https://</strong> に変更してアクセスしてください。
+          </div>
+
+          <div
+            class="ssl-hint-box"
+            style="
+              background: rgba(255, 255, 255, 0.06);
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              border-radius: 10px;
+              padding: 10px 12px;
+              font-size: 0.8rem;
+              color: #cbd5e1;
+              margin-bottom: 16px;
               text-align: left;
               line-height: 1.4;
             "
           >
-            <strong>HTTP接続で開かれています</strong><br />
-            Safari等のスマホブラウザでは、セキュリティ仕様により HTTP(http://)
-            での GPS・カメラアクセスがブロックされます。<br />
-            URLの先頭を <strong>https://</strong> に変更して開き直してください。
+            💡 <strong>「この接続はプライベートではありません」と出る場合</strong><br />
+            Safari: 「詳細を表示」→「このウェブサイトを閲覧」を選択<br />
+            Chrome: 「詳細設定」→「～にアクセスする（安全ではありません）」を選択
           </div>
+
+          <div
+            id="ip-warning"
+            style="
+              display: none;
+              background: rgba(239, 140, 68, 0.25);
+              border: 1px solid #ef8c44;
+              color: #ffffff;
+              padding: 12px 14px;
+              border-radius: 10px;
+              font-size: 0.85rem;
+              margin-bottom: 16px;
+              text-align: left;
+              line-height: 1.5;
+            "
+          >
+            <strong>⚠️ ローカルIPでのアクセスに関する注意</strong><br />
+            iOS Safariでは、自己署名証明書によるIPアドレス（192.168.x.x 等）でのHTTPS接続時、セキュリティ制限によりカメラや各種センサーが強制ブロックされます。<br />
+            機能しない場合は <strong>ngrok等のトンネルツール</strong> や <strong>GitHub Pages</strong> をご利用ください。
+          </div>
+
           <button id="btn-start-app" class="btn-start-ar">
             ARナビゲーションを開始
           </button>
@@ -196,6 +250,6 @@
     </div>
 
     <!-- アプリメインエントリーポイント -->
-    <script src="./src/bundle.js?v=20260726_16"></script>
+    <script type="module" src="./src/main.js"></script>
   </body>
 </html>

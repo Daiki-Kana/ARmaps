@@ -11,6 +11,7 @@ export class MapView {
     this.checkpointMarkers = [];
 
     this.onSelectTargetCallback = null;
+    this.onToggleVisitedCallback = null;
     this.isInitialized = false;
   }
 
@@ -47,8 +48,11 @@ export class MapView {
 
   /**
    * チェックポイント一覧をマップ上にピン配置
+   * @param {Array} checkpoints - チェックポイント配列
+   * @param {string|null} activeTargetId - 選択中目的地のID
+   * @param {Set<string>} visitedIds - 完了済みチェックポイントIDのSet
    */
-  renderCheckpoints(checkpoints, activeTargetId = null) {
+  renderCheckpoints(checkpoints, activeTargetId = null, visitedIds = new Set()) {
     if (!this.map) return;
 
     // 既存のCPマーカーを削除
@@ -57,13 +61,14 @@ export class MapView {
 
     checkpoints.forEach((cp) => {
       const isSelected = cp.id === activeTargetId;
+      const isVisited = visitedIds && visitedIds.has(cp.id);
 
       // アイコンスタイル定義
       const customIcon = L.divIcon({
         className: 'custom-cp-marker',
         html: `
-          <div class="cp-pin ${isSelected ? 'is-active' : ''}">
-            <span class="cp-code">${cp.code || 'CP'}</span>
+          <div class="cp-pin ${isSelected ? 'is-active' : ''} ${isVisited ? 'is-visited' : ''}">
+            <span class="cp-code">${isVisited ? '✓' : (cp.code || 'CP')}</span>
             <div class="cp-pulse"></div>
           </div>
         `,
@@ -74,26 +79,46 @@ export class MapView {
       const marker = L.marker([cp.lat, cp.lng], { icon: customIcon }).addTo(this.map);
 
       // ポップアップ内容
+      const visitedBadge = isVisited
+        ? `<span class="badge-visited">✓ 完了済み</span>`
+        : `<span class="badge-pts">+${cp.points} pts</span>`;
+
+      const visitedBtnText = isVisited ? '↩ 完了解除' : '✓ 完了としてマーク';
+      const visitedBtnClass = isVisited ? 'btn-toggle-visited btn-unvisit' : 'btn-toggle-visited btn-visit';
+
       const popupContent = `
         <div class="map-popup-card">
           <h4>${cp.name}</h4>
           <p>${cp.description || ''}</p>
           <div class="popup-info">
-            <span class="badge-pts">+${cp.points} pts</span>
+            ${visitedBadge}
           </div>
           <button class="btn-select-target" data-cpid="${cp.id}">
             📍 この地点を目的地に設定
+          </button>
+          <button class="${visitedBtnClass}" data-cpid="${cp.id}">
+            ${visitedBtnText}
           </button>
         </div>
       `;
 
       marker.bindPopup(popupContent);
       marker.on('popupopen', () => {
-        const btn = document.querySelector(`.btn-select-target[data-cpid="${cp.id}"]`);
-        if (btn) {
-          btn.addEventListener('click', () => {
+        const btnSelect = document.querySelector(`.btn-select-target[data-cpid="${cp.id}"]`);
+        if (btnSelect) {
+          btnSelect.addEventListener('click', () => {
             if (this.onSelectTargetCallback) {
               this.onSelectTargetCallback(cp);
+            }
+            this.map.closePopup();
+          });
+        }
+
+        const btnToggle = document.querySelector(`.btn-toggle-visited[data-cpid="${cp.id}"]`);
+        if (btnToggle) {
+          btnToggle.addEventListener('click', () => {
+            if (this.onToggleVisitedCallback) {
+              this.onToggleVisitedCallback(cp);
             }
             this.map.closePopup();
           });
@@ -173,5 +198,9 @@ export class MapView {
 
   onSelectTarget(callback) {
     this.onSelectTargetCallback = callback;
+  }
+
+  onToggleVisited(callback) {
+    this.onToggleVisitedCallback = callback;
   }
 }
