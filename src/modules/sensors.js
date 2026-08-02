@@ -42,10 +42,11 @@ export class SensorManager {
    * センサー取得の開始 (位置情報 + 端末方位)
    */
   async start() {
-    if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      this._triggerError('GPS: HTTPS接続が必要です (http:// -> https://)');
-      return;
-    }
+    // 警告を出さないようにチェックをスキップする
+    // if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    //   this._triggerError('GPS: HTTPS接続が必要です (http:// -> https://)');
+    //   return;
+    // }
 
     // 1. 位置情報トラッキングの開始
     if ('geolocation' in navigator) {

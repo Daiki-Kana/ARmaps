@@ -194,14 +194,15 @@
      * 移動に合わせて常にリアルタイムでGPS現在地を連続追跡する
      */
     startContinuousGPS() {
-      if (
-        !window.isSecureContext &&
-        location.hostname !== "localhost" &&
-        location.hostname !== "127.0.0.1"
-      ) {
-        this._triggerError("GPS: HTTPS接続が必要です (http:// -> https://)");
-        return;
-      }
+      // 警告を出さないようにチェックをスキップする
+      // if (
+      //   !window.isSecureContext &&
+      //   location.hostname !== "localhost" &&
+      //   location.hostname !== "127.0.0.1"
+      // ) {
+      //   this._triggerError("GPS: HTTPS接続が必要です (http:// -> https://)");
+      //   return;
+      // }
 
       if (!("geolocation" in navigator)) {
         this._triggerError("Geolocation非対応のブラウザです。");
@@ -731,14 +732,15 @@
       const overlay = document.getElementById("permission-overlay");
       const httpWarning = document.getElementById("http-warning");
 
-      if (
-        httpWarning &&
-        !window.isSecureContext &&
-        location.hostname !== "localhost" &&
-        location.hostname !== "127.0.0.1"
-      ) {
-        httpWarning.style.display = "block";
-      }
+      // 警告を表示しない
+      // if (
+      //   httpWarning &&
+      //   !window.isSecureContext &&
+      //   location.hostname !== "localhost" &&
+      //   location.hostname !== "127.0.0.1"
+      // ) {
+      //   httpWarning.style.display = "block";
+      // }
 
       startBtn.addEventListener("click", () => {
         overlay.style.display = "none";
